@@ -21,6 +21,10 @@
 - **重構**：移除 `data/utils.py` 與 `data/classifier.py` 兩個純 re-export 的空殼檔，9 處 import 統一改為直接從 `common.*` 引用，減少 indirection。
 - **穩定性**：`requirements.txt` 套件版本全數 pin 死（`streamlit==1.56.0` / `pandas==3.0.2` / `plotly==6.6.0` / `pydantic==2.12.5` / `supabase==2.28.3` / `openpyxl==3.1.5` / `pytest==9.0.3`），避免上游套件升級造成的 silent break。
 - **可發現性**：經營總覽與財務戰情室的所有 metric tooltip 改為中性語言（「正值＝增加,負值＝減少」），不再依賴顏色判讀，色盲友善
+- **Supabase 防暫停強化**（`.github/workflows/keepalive.yml`）：Ping endpoint 從 `/storage/v1/bucket` 改為 `/rest/v1/`（database API，確保算入 activity），加 `--retry 3`，排程增至每日 06:00 / 18:00 兩次；新增 `recover` job 在 ping 失敗時透過 Management API 自動 Restore；恢復失敗時自動開 GitHub issue 通知
+
+### Added
+- **雲端錯誤友善訊息**（`app.py`）：新增 `_CLOUD_ERR` tuple 分類 DNS / ConnectionError，分享連結下載/上傳失敗時顯示「☁️ 雲端服務暫停中」而非原始錯誤
 
 ### Verified
 - 66 個 pytest 全部通過（5.83s）

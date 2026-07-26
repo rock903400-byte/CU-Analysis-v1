@@ -79,6 +79,12 @@ if shared_csv and len(shared_csv) > _MAX_PARAM_LEN:
     st.error("❌ 分享連結參數過長（可能為攻擊或損壞），已忽略。")
     shared_csv = None
 
+_CLOUD_ERR = (
+    "Name or service not known", "getaddrinfo", "Connection refused",
+    "Temporary failure in name resolution", "remote end closed",
+    "ConnectionError",
+)
+
 if shared_file and st.session_state["preloaded_data"] is None:
     # 嘗試載入雲端檔案前，先清除前一次的錯誤訊息，避免舊錯誤殘留
     st.session_state["preload_err"] = None
@@ -95,7 +101,11 @@ if shared_file and st.session_state["preloaded_data"] is None:
             preloaded_data=(data, df_m, df_l, raw_bytes, region_map),
         )
     except Exception as e:
-        st.session_state["preload_err"] = str(e)
+        _m = str(e)
+        if any(k in _m for k in _CLOUD_ERR):
+            st.session_state["preload_err"] = "☁️ 雲端服務暫停中，請通知管理員恢復後再試。"
+        else:
+            st.session_state["preload_err"] = _m
 
 if shared_csv and st.session_state["preloaded_csv"] is None:
     try:
@@ -104,8 +114,13 @@ if shared_csv and st.session_state["preloaded_csv"] is None:
         )
         st.session_state["preloaded_csv"] = (process_csv_final(raw_csv), raw_csv)
     except Exception as e:
-        logger.error(f"CSV 載入失敗: {e}")
-        st.session_state["preload_csv_err"] = str(e)
+        _m = str(e)
+        if any(k in _m for k in _CLOUD_ERR):
+            logger.error(f"CSV 載入失敗（雲端連線問題）: {e}")
+            st.session_state["preload_csv_err"] = "☁️ 雲端服務暫停中，請通知管理員恢復後再試。"
+        else:
+            logger.error(f"CSV 載入失敗: {e}")
+            st.session_state["preload_csv_err"] = f"CSV 載入失敗：{_m}"
 
 # ── 預載錯誤反饋 ──────────────────────────────────────────
 if "preload_err" in st.session_state and st.session_state["preload_err"]:
@@ -299,7 +314,11 @@ if IS_ADMIN:
                                 f"{CONFIG['APP_BASE_URL']}/?{'&'.join(params)}"
                             )
                 except Exception as e:
-                    st.error(f"❌ 上傳失敗：{e}")
+                    _m = str(e)
+                    if any(k in _m for k in _CLOUD_ERR):
+                        st.error("☁️ 雲端服務暫停中，無法產生分享連結。請通知管理員恢復後再試。")
+                    else:
+                        st.error(f"❌ 上傳失敗：{_m}")
                 finally:
                     st.session_state["share_generating"] = False
             if st.session_state["latest_share_url"]:

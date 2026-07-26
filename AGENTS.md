@@ -102,10 +102,6 @@ app.py
 - 任一關鍵欄位（`eOvd, eLoan, R0, R1, memG, shrG, M0-3, S0-3`）為 None/NaN → 回傳 `"⏸️ 資料不足"`
 - 改 `classify` 邏輯後，務必 bump `excel_processor.py` 內的 `_VER` / `_CACHE_VER`
 
-**`preload_err` 自動清空**（`app.py:111-116`）
-- 成功載入後會自動清空 Excel 與 CSV 兩個錯誤旗標
-- 手動 reset：`st.session_state.pop("preload_err", None)` / `pop("preload_csv_err", None)`
-
 **URL 參數長度驗證**（`app.py:70`）
 - `_MAX_PARAM_LEN = 256`，超過則 `st.error` 並忽略
 - 防 DoS / 損壞連結
@@ -119,6 +115,25 @@ app.py
 - 症狀：`safe_secrets().get("admin_password")` 回空、`list(st.secrets.keys())` 找不到那個 key
 - 正確順序：所有 `BUCKET_NAME = "..."` / `admin_password = "..."` 寫最上面，再寫 `[supabase]` `[thresholds]`
 - 錯誤示範：`[supabase]` 後面寫 `BUCKET_NAME = "..."` → 解析後 key 消失
+
+**Supabase Free tier inactivity 防暫停**（`.github/workflows/keepalive.yml`）
+- Free tier 專案 **7 天低活動自動 pause**，DNS 被回收後無法用 Storage API 喚醒
+- keepalive 打的是 **`/rest/v1/`（database API）**，不是 Storage API（後者可能不算 activity）
+- 排程每天 UTC 06:00 / 18:00 各跑一次
+- `ping` job 失敗 → `recover` job 用 Supabase Management API 自動 Restore
+- 自動 Restore 需要 GitHub Secrets：`SUPABASE_PAT`（Personal Access Token）和 `SUPABASE_PROJECT_REF`
+- 如果 Restore 也失敗 → 自動開 GitHub issue（`ops` label）通知
+- PAT 用完後建議到 https://supabase.com/dashboard/account/tokens 撤銷重長
+
+**`app.py` 雲端錯誤分類**（`app.py` 頂層 `_CLOUD_ERR` tuple）
+- 分享連結下載/上傳的 `except` 會比對錯誤字串是否為雲端連線問題（DNS/ConnectionError）
+- 是 → 顯示「☁️ 雲端服務暫停中，請通知管理員」
+- 否 → 顯示原始錯誤（便於 debug）
+- 如果要改錯誤分類邏輯，改 `_CLOUD_ERR` tuple 即可
+
+**`preload_err` 自動清空**（`app.py` preload 區段）
+- 成功載入後會自動清空 Excel 與 CSV 兩個錯誤旗標
+- 手動 reset：`st.session_state.pop("preload_err", None)` / `pop("preload_csv_err", None)`
 
 ## 測試
 
