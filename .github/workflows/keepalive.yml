@@ -9,24 +9,24 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase database API
+      - name: Ping Supabase (any endpoint = activity resets pause timer)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
-          echo "Pinging Supabase REST API at $(date -u)"
+          echo "Pinging Supabase at $(date -u)"
           STATUS=$(curl -s -o /tmp/body -w "%{http_code}" \
             --retry 3 --retry-delay 5 \
             -H "apikey: ${SUPABASE_KEY}" \
             -H "Authorization: Bearer ${SUPABASE_KEY}" \
-            "${SUPABASE_URL}/rest/v1/")
-          echo "HTTP status: ${STATUS}"
-          cat /tmp/body 2>/dev/null; echo
-          if [ "$STATUS" != "200" ]; then
-            echo "::error::Supabase unreachable (HTTP ${STATUS})"
+            "${SUPABASE_URL}/rest/v1/" \
+            || true)
+          echo "HTTP status: ${STATUS:-<no response>}"
+          if [ -z "$STATUS" ]; then
+            echo "::error::Supabase DNS/connection error — may be paused"
             exit 1
           fi
-          echo "✅ Supabase alive — pause timer reset"
+          echo "✅ Supabase alive (HTTP ${STATUS}) — pause timer reset"
 
   recover:
     needs: ping
@@ -51,14 +51,19 @@ jobs:
             -X POST \
             -H "Authorization: Bearer ${SUPABASE_PAT}" \
             -H "Content-Type: application/json" \
-            "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/restore")
+            "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/restore" \
+            || true)
+          BODY=$(cat /tmp/rb 2>/dev/null)
           echo "HTTP ${HTTP_CODE}"
-          cat /tmp/rb 2>/dev/null; echo
+          [ -n "$BODY" ] && echo "$BODY"
           if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ] || [ "$HTTP_CODE" = "202" ]; then
             echo "✅ Restore submitted — project back in 1–3 min"
             echo "restored=ok" >> "$GITHUB_OUTPUT"
           elif [ "$HTTP_CODE" = "409" ]; then
-            echo "⚠️ Already restoring or active"
+            echo "⚠️ Already restoring — treat as success"
+            echo "restored=ok" >> "$GITHUB_OUTPUT"
+          elif [ "$HTTP_CODE" = "400" ] && echo "$BODY" | grep -q "ACTIVE_HEALTHY"; then
+            echo "⚠️ Project already active — no restore needed"
             echo "restored=ok" >> "$GITHUB_OUTPUT"
           else
             echo "::error::Restore API failed (HTTP ${HTTP_CODE})"
@@ -81,9 +86,9 @@ jobs:
 
           事件: ${{ github.event_name }}
 
-          Ping 失敗 → 自動 Restore API 也失敗。
+          Ping 失敗 → Restore API 也失敗。
 
           請手動處理：
           1. 前往 Supabase Dashboard 點 Restore project
           2. 等待 1–3 分鐘恢復
-          3. 或到 GitHub Actions 手動觸發 workflow_dispatch 重新檢查"
+          3. 或觸發 workflow_dispatch 重新檢查"
