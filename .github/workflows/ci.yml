@@ -25,7 +25,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install flake8 mypy black pytest pytest-cov
+          pip install flake8 mypy==2.3.0 black pytest pytest-cov types-openpyxl
 
       - name: Format check (black)
         run: black --check app.py config.py common/ components/ data/ services/ views/ charts/
