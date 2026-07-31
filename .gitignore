@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.coverage
 
 # === 資料與機密檔案 (嚴禁上傳) ===
 *.xlsx
