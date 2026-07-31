@@ -34,9 +34,7 @@ jobs:
         run: flake8 app.py config.py common/ components/ data/ services/ views/ charts/
 
       - name: Type check (mypy)
-        continue-on-error: true
         run: mypy app.py config.py common/ components/ data/ services/ views/ charts/
 
       - name: Test (pytest)
-        continue-on-error: true
         run: pytest tests/ -v --cov=. --cov-report=term-missing

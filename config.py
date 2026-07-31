@@ -57,6 +57,7 @@ ACCOUNT_CODES = {
 
 def safe_secrets():
     try:
+        list(st.secrets.keys())  # 主動觸發惰性解析；沒 secrets 檔才會在這拋錯
         return st.secrets
     except Exception:
         return {}
