@@ -80,8 +80,11 @@ if shared_csv and len(shared_csv) > _MAX_PARAM_LEN:
     shared_csv = None
 
 _CLOUD_ERR = (
-    "Name or service not known", "getaddrinfo", "Connection refused",
-    "Temporary failure in name resolution", "remote end closed",
+    "Name or service not known",
+    "getaddrinfo",
+    "Connection refused",
+    "Temporary failure in name resolution",
+    "remote end closed",
     "ConnectionError",
 )
 
@@ -103,7 +106,9 @@ if shared_file and st.session_state["preloaded_data"] is None:
     except Exception as e:
         _m = str(e)
         if any(k in _m for k in _CLOUD_ERR):
-            st.session_state["preload_err"] = "☁️ 雲端服務暫停中，請通知管理員恢復後再試。"
+            st.session_state["preload_err"] = (
+                "☁️ 雲端服務暫停中，請通知管理員恢復後再試。"
+            )
         else:
             st.session_state["preload_err"] = _m
 
@@ -117,7 +122,9 @@ if shared_csv and st.session_state["preloaded_csv"] is None:
         _m = str(e)
         if any(k in _m for k in _CLOUD_ERR):
             logger.error(f"CSV 載入失敗（雲端連線問題）: {e}")
-            st.session_state["preload_csv_err"] = "☁️ 雲端服務暫停中，請通知管理員恢復後再試。"
+            st.session_state["preload_csv_err"] = (
+                "☁️ 雲端服務暫停中，請通知管理員恢復後再試。"
+            )
         else:
             logger.error(f"CSV 載入失敗: {e}")
             st.session_state["preload_csv_err"] = f"CSV 載入失敗：{_m}"
@@ -316,7 +323,9 @@ if IS_ADMIN:
                 except Exception as e:
                     _m = str(e)
                     if any(k in _m for k in _CLOUD_ERR):
-                        st.error("☁️ 雲端服務暫停中，無法產生分享連結。請通知管理員恢復後再試。")
+                        st.error(
+                            "☁️ 雲端服務暫停中，無法產生分享連結。請通知管理員恢復後再試。"
+                        )
                     else:
                         st.error(f"❌ 上傳失敗：{_m}")
                 finally:
