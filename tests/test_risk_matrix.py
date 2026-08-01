@@ -27,9 +27,10 @@ def test_risk_matrix_render():
         "liquidity_loan": 0.8,
     }
 
-    with patch("streamlit.plotly_chart") as mock_chart, patch(
-        "streamlit.markdown"
-    ) as mock_markdown:
+    with (
+        patch("streamlit.plotly_chart") as mock_chart,
+        patch("streamlit.markdown") as mock_markdown,
+    ):
         render_risk_matrix(data, thresholds, "#F0F4F8")
         assert mock_chart.called
         assert mock_markdown.called

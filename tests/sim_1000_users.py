@@ -46,7 +46,6 @@ from services.diagnosis_service import (
     calc_trend,
 )
 
-
 ISSUES = []
 
 
@@ -1080,9 +1079,7 @@ csv_bytes = """年月,會計科目,會科名稱,社名,當月金額
 11301,1101,現金,測試社,1000000
 11302,1101,現金,測試社,1100000
 11312,4101,利息收入,測試社,50000
-""".encode(
-    "utf-8-sig"
-)
+""".encode("utf-8-sig")
 try:
     df = process_csv_final(csv_bytes)
     print(f"  ✅ CSV: {len(df)} rows, 年月型別={df['年月'].dtype}")
@@ -1095,9 +1092,7 @@ except Exception as e:
 print("\n[F2] 年月含中文")
 csv_chinese = """年月,會計科目,會科名稱,社名,當月金額
 113年01月,1101,現金,測試社,1000
-""".encode(
-    "utf-8-sig"
-)
+""".encode("utf-8-sig")
 try:
     df = process_csv_final(csv_chinese)
     issue("MEDIUM", "CSV3", "CSV 中文年月應該失敗卻成功", f"got {df['年月'].iloc[0]!r}")
@@ -1108,9 +1103,7 @@ except ValueError as e:
 print("\n[F3] 缺年月欄")
 csv_no_date = """會計科目,會科名稱,社名,當月金額
 1101,現金,測試社,1000
-""".encode(
-    "utf-8-sig"
-)
+""".encode("utf-8-sig")
 try:
     df = process_csv_final(csv_no_date)
     issue("HIGH", "CSV4", "CSV 缺年月欄 沒拋錯", f"got {len(df)} rows")
@@ -1121,9 +1114,7 @@ except Exception as e:
 print("\n[F4] 當月金額含非數字")
 csv_bad_num = """年月,會計科目,會科名稱,社名,當月金額
 11301,1101,現金,測試社,abc
-""".encode(
-    "utf-8-sig"
-)
+""".encode("utf-8-sig")
 try:
     df = process_csv_final(csv_bad_num)
     if df["當月金額"].iloc[0] != 0:
@@ -1137,9 +1128,7 @@ except Exception as e:
 print("\n[F5] 會科名稱是 0")
 csv_zero_name = """年月,會計科目,會科名稱,社名,當月金額
 11301,1101,0,測試社,1000
-""".encode(
-    "utf-8-sig"
-)
+""".encode("utf-8-sig")
 try:
     df = process_csv_final(csv_zero_name)
     if df["會科名稱"].iloc[0] != "(未分類)":

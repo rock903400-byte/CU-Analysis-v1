@@ -66,11 +66,12 @@ def test_health_check_render():
         ]
     )
 
-    with patch("streamlit.selectbox", return_value="測試社") as mock_select, patch(
-        "streamlit.markdown"
-    ) as mock_markdown, patch("streamlit.plotly_chart") as mock_chart, patch(
-        "streamlit.columns"
-    ) as mock_columns:
+    with (
+        patch("streamlit.selectbox", return_value="測試社") as mock_select,
+        patch("streamlit.markdown") as mock_markdown,
+        patch("streamlit.plotly_chart") as mock_chart,
+        patch("streamlit.columns") as mock_columns,
+    ):
 
         mock_columns.side_effect = lambda n: [MagicMock() for _ in range(n)]
 
