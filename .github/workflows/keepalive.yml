@@ -13,8 +13,13 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
         run: |
           echo "Pinging Supabase at $(date -u)"
+          if [ -n "${SUPABASE_PROJECT_REF}" ] && [[ "${SUPABASE_URL}" != *"${SUPABASE_PROJECT_REF}"* ]]; then
+            echo "::error::SUPABASE_URL 不含 PROJECT_REF（${SUPABASE_PROJECT_REF}），可能指向錯誤專案"
+            exit 1
+          fi
           STATUS=$(curl -s -o /tmp/body -w "%{http_code}" \
             --retry 3 --retry-delay 5 \
             -H "apikey: ${SUPABASE_KEY}" \
@@ -22,8 +27,8 @@ jobs:
             "${SUPABASE_URL}/rest/v1/" \
             || true)
           echo "HTTP status: ${STATUS:-<no response>}"
-          if [ -z "$STATUS" ]; then
-            echo "::error::Supabase DNS/connection error — may be paused"
+          if [ -z "$STATUS" ] || [ "$STATUS" = "000" ]; then
+            echo "::error::Supabase DNS/connection error (${STATUS:-no response}) — may be paused"
             exit 1
           fi
           echo "✅ Supabase alive (HTTP ${STATUS}) — pause timer reset"
@@ -35,17 +40,43 @@ jobs:
     permissions:
       issues: write
     steps:
-      - name: Attempt auto-restore via Management API
-        id: restore
+      - name: Query project status via Management API
+        id: status
         env:
           SUPABASE_PAT: ${{ secrets.SUPABASE_PAT }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
         run: |
           if [ -z "${SUPABASE_PAT}" ] || [ -z "${SUPABASE_PROJECT_REF}" ]; then
             echo "⚠️ PAT/PROJECT_REF not set — skip auto-restore"
-            echo "restored=skipped" >> "$GITHUB_OUTPUT"
+            echo "status=skipped" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          echo "Querying status of ${SUPABASE_PROJECT_REF}..."
+          BODY=$(curl -s \
+            -H "Authorization: Bearer ${SUPABASE_PAT}" \
+            "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}" \
+            || true)
+          echo "$BODY"
+          STATE=$(echo "$BODY" | grep -o '"status":"[^"]*"' | head -1 | cut -d'"' -f4)
+          echo "state=${STATE:-unknown}" >> "$GITHUB_OUTPUT"
+          if [ "${STATE}" = "ACTIVE_HEALTHY" ]; then
+            echo "✅ Project already active — no restore needed"
+            echo "status=active" >> "$GITHUB_OUTPUT"
+          elif [ "${STATE}" = "PAUSED" ]; then
+            echo "⚠️ Project paused — will attempt restore"
+            echo "status=paused" >> "$GITHUB_OUTPUT"
+          else
+            echo "⚠️ Unknown status (${STATE:-empty}) — will attempt restore"
+            echo "status=paused" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Attempt auto-restore via Management API
+        id: restore
+        if: steps.status.outputs.status == 'paused'
+        env:
+          SUPABASE_PAT: ${{ secrets.SUPABASE_PAT }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
           echo "Restoring ${SUPABASE_PROJECT_REF}..."
           HTTP_CODE=$(curl -s -o /tmp/rb -w "%{http_code}" \
             -X POST \
