@@ -62,8 +62,8 @@ jobs:
           if [ "${STATE}" = "ACTIVE_HEALTHY" ]; then
             echo "✅ Project already active — no restore needed"
             echo "status=active" >> "$GITHUB_OUTPUT"
-          elif [ "${STATE}" = "PAUSED" ]; then
-            echo "⚠️ Project paused — will attempt restore"
+          elif [ "${STATE}" = "PAUSED" ] || [ "${STATE}" = "INACTIVE" ]; then
+            echo "⚠️ Project ${STATE} — will attempt restore"
             echo "status=paused" >> "$GITHUB_OUTPUT"
           else
             echo "⚠️ Unknown status (${STATE:-empty}) — will attempt restore"
