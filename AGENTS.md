@@ -120,10 +120,15 @@ app.py
 - Free tier 專案 **7 天低活動自動 pause**，DNS 被回收後無法用 Storage API 喚醒
 - keepalive 打的是 **`/rest/v1/`（database API）**，不是 Storage API（後者可能不算 activity）
 - 排程每天 UTC 06:00 / 18:00 各跑一次
-- `ping` job 失敗 → `recover` job 用 Supabase Management API 自動 Restore
+- **ping 失敗判定**（`f2add11`）：`000`（DNS/連線失敗）與空值都算 failure——**不要只查空字串**，curl 連線失敗時 `%{http_code}` 輸出的是 `000`（非空），舊寫法會誤判 alive 讓 recover 永不觸發
+- **防呆**：ping 前檢查 `SUPABASE_URL` 是否包含 `SUPABASE_PROJECT_REF`，不含直接 fail（避免打到錯專案還自以為成功）
+- `recover` job 是兩階段：先查 Management API status → `ACTIVE_HEALTHY` 跳過；`PAUSED` / **`INACTIVE`** 才 POST `/rest/v1/projects/{ref}/restore`
+- 注意 Management API 的 paused 狀態字串是 **`INACTIVE`**（不是 `PAUSED`），兩者都要認
 - 自動 Restore 需要 GitHub Secrets：`SUPABASE_PAT`（Personal Access Token）和 `SUPABASE_PROJECT_REF`
 - 如果 Restore 也失敗 → 自動開 GitHub issue（`ops` label）通知
 - PAT 用完後建議到 https://supabase.com/dashboard/account/tokens 撤銷重長
+- **實測記錄**：2026-08-05 CUSA-App 曾被 pause（`f2add11` 前的舊 workflow 天天假綠勾沒人發現），修正後靠此機制自動 Restore 成功、ping 回復 `401`（有回應即 active）
+- 偵錯技巧：`gh run list --workflow=keepalive.yml --limit 50` 看歷史，`gh run view <id> --log` 看實際 HTTP code
 
 **`app.py` 雲端錯誤分類**（`app.py` 頂層 `_CLOUD_ERR` tuple）
 - 分享連結下載/上傳的 `except` 會比對錯誤字串是否為雲端連線問題（DNS/ConnectionError）

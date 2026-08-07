@@ -18,6 +18,7 @@
 - **CSS 設計系統**（`config.py`）：新增 `.step-card` / `.legend-card` / `.cta-box` / `.first-time-tip` 等元件樣式，含手機版 RWD
 
 ### Changed
+- **Supabase 防暫停白魔法失效修正**（`.github/workflows/keepalive.yml`, `f2add11` / `d30db13`）：修掉「天天假綠勾」的 bug——ping 的失敗判定原本只檢查空字串，curl 連線失敗時 `%{http_code}` 傳的是 `000`（非空）導致永遠誤判 alive、recover 永不觸發；改為 `000` 與空值都算 failure，新增 `SUPABASE_URL` 含 `PROJECT_REF` 防呆，recover 改兩階段（先查 Management API status，`PAUSED`/`INACTIVE` 才 restore）。2026-08-05 CUSA-App 曾被 pause 後靠此自動恢復成功。
 - **重構**：移除 `data/utils.py` 與 `data/classifier.py` 兩個純 re-export 的空殼檔，9 處 import 統一改為直接從 `common.*` 引用，減少 indirection。
 - **穩定性**：`requirements.txt` 套件版本全數 pin 死（`streamlit==1.56.0` / `pandas==3.0.2` / `plotly==6.6.0` / `pydantic==2.12.5` / `supabase==2.28.3` / `openpyxl==3.1.5` / `pytest==9.0.3`），避免上游套件升級造成的 silent break。
 - **可發現性**：經營總覽與財務戰情室的所有 metric tooltip 改為中性語言（「正值＝增加,負值＝減少」），不再依賴顏色判讀，色盲友善
