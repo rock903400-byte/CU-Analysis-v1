@@ -1,8 +1,11 @@
 # cu-risk-dashboard
 
-![CI](https://github.com/rock903400-byte/cu-risk-dashboard/actions/workflows/ci.yml/badge.svg)
+[![CI](https://github.com/rock903400-byte/cu-risk-dashboard/actions/workflows/ci.yml/badge.svg)](https://github.com/rock903400-byte/cu-risk-dashboard/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 > 風險健檢儀表板 — 整合財報數據的風險管理與財務分析平台，大字體高齡友善設計
+
+**線上 Demo**: https://cu-analysis-v1-vizgphhwjwmfkvrrktdjte.streamlit.app
 
 ## 功能特色
 
