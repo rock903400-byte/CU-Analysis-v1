@@ -127,15 +127,26 @@ def _build_excel_bytes(unions: list[dict]) -> bytes:
     return buf.getvalue()
 
 
-def _make_union(社號: str, 社名: str, *, member: int = 1000, share: int = 50_000_000):
+def _make_union(
+    社號: str,
+    社名: str,
+    *,
+    member: int = 1000,
+    share: int = 50_000_000,
+    savings_rate: float = 0.85,
+    latest_savings_rate: float | None = None,
+):
     """113 全年 12 個月 + 11401；數值穩健（一般狀態）"""
+    latest_savings_rate = (
+        savings_rate if latest_savings_rate is None else latest_savings_rate
+    )
     months = {}
     for mm in range(1, 13):
         months[f"113{mm:02d}"] = {
             "社員數": member,
             "股金": share,
             "貸放比": 0.6,
-            "儲蓄率": 0.85,
+            "儲蓄率": savings_rate,
             "放款總額": 30_000_000,
             "逾期貸款": 100_000,
             "逾放比": 0.005,
@@ -146,7 +157,7 @@ def _make_union(社號: str, 社名: str, *, member: int = 1000, share: int = 50
         "社員數": member,
         "股金": share,
         "貸放比": 0.6,
-        "儲蓄率": 0.85,
+        "儲蓄率": latest_savings_rate,
         "放款總額": 30_000_000,
         "逾期貸款": 100_000,
         "逾放比": 0.005,
@@ -195,6 +206,13 @@ class TestProcessExcelFinal:
             "✅ 穩健模範",
             "📊 一般狀態",
         }
+
+    def test_savings_rate_uses_latest_month_not_dec(self):
+        bytes_ = _build_excel_bytes(
+            [_make_union("001", "A社", savings_rate=0.7, latest_savings_rate=0.9)]
+        )
+        data, *_ = process_excel_final(bytes_, THRESHOLDS, SHEETS)
+        assert data.iloc[0]["儲蓄率"] == pytest.approx(0.9)
 
     def test_missing_sheet_raises_value_error(self):
         buf = io.BytesIO()

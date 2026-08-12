@@ -14,12 +14,12 @@ from common.utils import safe_div
 from common.classifier import classify
 from common.cleaning import defensive_clean_series
 
-_CACHE_VER = "v7"  # spinner 顯示用；真正 bust cache 的是函式內的 _VER，兩者都要 bump
+_CACHE_VER = "v8"  # spinner 顯示用；真正 bust cache 的是函式內的 _VER，兩者都要 bump
 
 
 @st.cache_data(ttl=3600, show_spinner=f"🚀 正在執行智慧分析 ({_CACHE_VER})...")
 def process_excel_final(file_bytes: bytes, thresholds: dict, sheets: dict):
-    _VER = "v7"  # bump when classifier.py logic changes; this string IS in bytecode
+    _VER = "v8"  # bump when classifier.py logic changes; this string IS in bytecode
     try:
         with pd.ExcelFile(io.BytesIO(file_bytes)) as xls:
             if not all(s in xls.sheet_names for s in sheets.values()):
@@ -151,7 +151,7 @@ def process_excel_final(file_bytes: bytes, thresholds: dict, sheets: dict):
                 "現有股金": curr_S,
                 "股金成長率(12M)": shrG_curr,
                 "貸放比": curr_eLoan,
-                "儲蓄率": _get_value(ms, "儲蓄率", T0),
+                "儲蓄率": _get_value(ms, "儲蓄率", max_d),
                 "逾放比(12M)": eOvd_12m,
                 "逾放比": curr_eOvd,
                 "開支比": curr_R,
